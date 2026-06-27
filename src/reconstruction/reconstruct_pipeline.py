@@ -33,7 +33,8 @@ def color_match(pred, reference):
 
 def sharpen(img):
     blur = gaussian_filter(img, sigma=(1.2, 1.2, 0))
-    return np.clip(img + 0.45 * (img - blur), 0, 1)
+    sharp = img + 0.45 * (img - blur)
+    return np.clip(sharp, 0, 1)
 
 
 def compute_metrics(pred, gt):
@@ -50,7 +51,7 @@ def compute_metrics(pred, gt):
     return mae, rmse, psnr, ssim_score, accuracy
 
 
-def reconstruct(npz_path, model, brightness=76, whiteness=32, aggressiveness=1.0):
+def reconstruct(npz_path, model, brightness=76, whiteness=32):
     data = np.load(npz_path)
 
     sar = data["sar"].astype(np.float32)
@@ -78,9 +79,8 @@ def reconstruct(npz_path, model, brightness=76, whiteness=32, aggressiveness=1.0
     raw_rgb = color_match(raw_rgb, cloudy_rgb)
     raw_rgb = sharpen(raw_rgb)
 
-    sigma = 2.8 * float(aggressiveness)
-    soft_mask = gaussian_filter(mask.astype(np.float32), sigma=sigma)
-    soft_mask = np.clip(soft_mask * float(aggressiveness), 0, 1)
+    soft_mask = gaussian_filter(mask.astype(np.float32), sigma=2.8)
+    soft_mask = np.clip(soft_mask, 0, 1)
     soft_mask_3 = np.repeat(soft_mask[:, :, None], 3, axis=2)
 
     final_rgb = cloudy_rgb * (1 - soft_mask_3) + raw_rgb * soft_mask_3
@@ -99,7 +99,7 @@ RMSE: {rmse:.4f}
 PSNR: {psnr:.2f} dB
 SSIM: {ssim_score:.4f}
 
-Task 1:
+Task 1 Status:
 ✅ Whole-image cloud detection improved
 ✅ Detected cloud regions reconstructed
 ✅ Non-cloud regions preserved
