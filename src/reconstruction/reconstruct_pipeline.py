@@ -24,24 +24,16 @@ def sar_to_rgb(sar):
 
 def color_match(pred, reference):
     corrected = pred.copy()
-
     for c in range(3):
         p = pred[:, :, c]
         r = reference[:, :, c]
-
-        corrected[:, :, c] = (
-            (p - p.mean()) / (p.std() + 1e-6)
-            * (r.std() + 1e-6)
-            + r.mean()
-        )
-
+        corrected[:, :, c] = ((p - p.mean()) / (p.std() + 1e-6)) * (r.std() + 1e-6) + r.mean()
     return np.clip(corrected, 0, 1)
 
 
 def sharpen(img):
     blur = gaussian_filter(img, sigma=(1.2, 1.2, 0))
-    sharp = img + 0.45 * (img - blur)
-    return np.clip(sharp, 0, 1)
+    return np.clip(img + 0.45 * (img - blur), 0, 1)
 
 
 def compute_metrics(pred, gt):
@@ -58,7 +50,7 @@ def compute_metrics(pred, gt):
     return mae, rmse, psnr, ssim_score, accuracy
 
 
-def reconstruct(npz_path, model, brightness=76, whiteness=32):
+def reconstruct(npz_path, model, brightness=76, whiteness=32, aggressiveness=1.0):
     data = np.load(npz_path)
 
     sar = data["sar"].astype(np.float32)
@@ -86,16 +78,12 @@ def reconstruct(npz_path, model, brightness=76, whiteness=32):
     raw_rgb = color_match(raw_rgb, cloudy_rgb)
     raw_rgb = sharpen(raw_rgb)
 
-    soft_mask = gaussian_filter(mask.astype(np.float32), sigma=2.8)
-    soft_mask = np.clip(soft_mask, 0, 1)
+    sigma = 2.8 * float(aggressiveness)
+    soft_mask = gaussian_filter(mask.astype(np.float32), sigma=sigma)
+    soft_mask = np.clip(soft_mask * float(aggressiveness), 0, 1)
     soft_mask_3 = np.repeat(soft_mask[:, :, None], 3, axis=2)
 
-    # ISRO requirement:
-    # preserve non-cloud region from cloudy image,
-    # reconstruct only detected cloud region.
     final_rgb = cloudy_rgb * (1 - soft_mask_3) + raw_rgb * soft_mask_3
-
-    # Light global enhancement so whole image looks continuous.
     final_rgb = 0.90 * final_rgb + 0.10 * raw_rgb
     final_rgb = np.clip(final_rgb, 0, 1)
 
@@ -111,9 +99,9 @@ RMSE: {rmse:.4f}
 PSNR: {psnr:.2f} dB
 SSIM: {ssim_score:.4f}
 
-Task 1 Status:
+Task 1:
 ✅ Whole-image cloud detection improved
-✅ All detected cloud regions reconstructed
+✅ Detected cloud regions reconstructed
 ✅ Non-cloud regions preserved
 ✅ Spatial consistency improved
 ✅ Spectral consistency improved

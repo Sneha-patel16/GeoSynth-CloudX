@@ -8,7 +8,7 @@ MODEL_PATH = "models/geosynth_final_best.pth"
 model = load_model(MODEL_PATH)
 
 
-def run_demo(uploaded_file, brightness, whiteness):
+def run_geosynth_cloudx(uploaded_file, brightness, whiteness, aggressiveness):
     if uploaded_file is None:
         raise gr.Error("Please upload a .npz satellite sample first.")
 
@@ -18,7 +18,8 @@ def run_demo(uploaded_file, brightness, whiteness):
         file_path,
         model,
         brightness,
-        whiteness
+        whiteness,
+        aggressiveness
     )
 
     save_path = "geosynth_reconstructed_output.png"
@@ -66,6 +67,10 @@ with gr.Blocks(theme=gr.themes.Soft(), css=css, title="GeoSynth CloudX") as demo
             25, 70, value=32, step=1,
             label="⚪ Cloud Whiteness Sensitivity"
         )
+        aggressiveness = gr.Slider(
+            0.5, 2.0, value=1.0, step=0.1,
+            label="🛠️ Reconstruction Aggressiveness"
+        )
 
     run_btn = gr.Button("🚀 Detect Cloud & Reconstruct", variant="primary")
 
@@ -87,8 +92,8 @@ with gr.Blocks(theme=gr.themes.Soft(), css=css, title="GeoSynth CloudX") as demo
     download = gr.File(label="⬇️ Download Final Reconstructed Image")
 
     run_btn.click(
-        fn=run_demo,
-        inputs=[upload, brightness, whiteness],
+        fn=run_geosynth_cloudx,
+        inputs=[upload, brightness, whiteness, aggressiveness],
         outputs=[
             cloudy_img,
             metrics_box,
