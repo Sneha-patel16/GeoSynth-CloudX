@@ -1,37 +1,37 @@
 import gradio as gr
 from PIL import Image
 import numpy as np
+import traceback
 
 from src.reconstruction.reconstruct_pipeline import load_model, reconstruct
 
 MODEL_PATH = "models/geosynth_final_best.pth"
 model = load_model(MODEL_PATH)
 
-
 def run_geosynth_cloudx(uploaded_file, brightness, whiteness):
-    if uploaded_file is None:
-        raise gr.Error("Please upload a .npz satellite sample first.")
+    try:
+        if uploaded_file is None:
+            raise gr.Error("Please upload a .npz satellite sample first.")
 
-    file_path = uploaded_file.name
+        file_path = uploaded_file.name
 
-    sar, cloudy, mask, raw, final_output, gt, metrics = reconstruct(
-        file_path,
-        model,
-        brightness,
-        whiteness
-    )
+        sar, cloudy, mask, raw, final_output, gt, metrics = reconstruct(
+            file_path,
+            model,
+            brightness,
+            whiteness
+        )
 
-    save_path = "geosynth_reconstructed_output.png"
-    Image.fromarray((final_output * 255).astype(np.uint8)).save(save_path)
+        save_path = "geosynth_reconstructed_output.png"
+        Image.fromarray((final_output * 255).astype(np.uint8)).save(save_path)
 
-    return cloudy, metrics, mask, raw, final_output, gt, save_path
+        return cloudy, metrics, mask, raw, final_output, gt, save_path
 
+    except Exception:
+        raise gr.Error(traceback.format_exc())
 
 css = """
-.gradio-container {
-    max-width: 1180px !important;
-    margin: auto !important;
-}
+.gradio-container { max-width: 1180px !important; margin: auto !important; }
 #title {
     text-align: center;
     padding: 20px;
@@ -43,7 +43,6 @@ css = """
 """
 
 with gr.Blocks(theme=gr.themes.Soft(), css=css, title="GeoSynth CloudX") as demo:
-
     gr.HTML("""
     <div id="title">
         <h1>🛰️ GeoSynth CloudX</h1>
@@ -52,20 +51,11 @@ with gr.Blocks(theme=gr.themes.Soft(), css=css, title="GeoSynth CloudX") as demo
     </div>
     """)
 
-    upload = gr.File(
-        label="📤 Upload NPZ Satellite Sample",
-        file_types=[".npz"]
-    )
+    upload = gr.File(label="📤 Upload NPZ Satellite Sample", file_types=[".npz"])
 
     with gr.Row():
-        brightness = gr.Slider(
-            70, 95, value=76, step=1,
-            label="☁️ Cloud Brightness Sensitivity"
-        )
-        whiteness = gr.Slider(
-            25, 70, value=32, step=1,
-            label="⚪ Cloud Whiteness Sensitivity"
-        )
+        brightness = gr.Slider(70, 95, value=76, step=1, label="☁️ Cloud Brightness Sensitivity")
+        whiteness = gr.Slider(25, 70, value=32, step=1, label="⚪ Cloud Whiteness Sensitivity")
 
     run_btn = gr.Button("🚀 Detect Cloud & Reconstruct", variant="primary")
 
@@ -89,15 +79,7 @@ with gr.Blocks(theme=gr.themes.Soft(), css=css, title="GeoSynth CloudX") as demo
     run_btn.click(
         fn=run_geosynth_cloudx,
         inputs=[upload, brightness, whiteness],
-        outputs=[
-            cloudy_img,
-            metrics_box,
-            mask_img,
-            raw_img,
-            final_img,
-            gt_img,
-            download
-        ]
+        outputs=[cloudy_img, metrics_box, mask_img, raw_img, final_img, gt_img, download]
     )
 
 demo.launch()
