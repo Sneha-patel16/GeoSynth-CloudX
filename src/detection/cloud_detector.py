@@ -2,7 +2,6 @@ import numpy as np
 from scipy.ndimage import binary_closing, binary_opening, binary_dilation, binary_fill_holes, gaussian_filter
 
 RGB_IDX = [3, 2, 1]
-
 def normalize_band(x):
     return np.clip((x + 1.0) / 2.0, 0, 1)
 

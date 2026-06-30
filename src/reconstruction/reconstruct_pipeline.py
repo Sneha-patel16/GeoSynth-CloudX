@@ -105,12 +105,6 @@ PSNR: {psnr:.2f} dB
 SSIM: {ssim_score:.4f}
 
 Detector Used: Adaptive Spectral Cloud Mask
-
-ISRO Pipeline:
-Cloud Detection → Cloud Mask → SAR-Assisted Reconstruction → Cloud-only Replacement → Ground Truth Evaluation
-
-Note:
-Ground truth is used only for evaluation, not for reconstruction.
 """
 
     return sar_rgb, cloudy_rgb, mask, raw_rgb, final_rgb, gt_rgb, metrics
